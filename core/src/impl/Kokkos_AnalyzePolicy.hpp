@@ -50,27 +50,18 @@
 
 namespace Kokkos { namespace Impl {
 
+struct device_id_tag{};
+
 template <typename...>
 using void_t = void;
 
-// Primary template handles all types not supporting the operation.
-template <typename, template <typename> class, typename = void_t<>>
-struct detect : std::false_type {};
-
-// Specialization recognizes/validates only types supporting the archetype.
-template <typename T, template <typename> class Op>
-struct detect<T, Op, void_t<Op<T>>> : std::true_type {};
-
-template<int N> struct DeviceId {
-  using value = N;
-  using device_id_tag = void;
+template<int N> struct DeviceId : public device_id_tag {
+  constexpr static int id = N;
+  using device_id = void;
 };
 
 template<typename T>
-using getDeviceTag = decltype(T::device_id_tag);
-
-template<typename T>
-using is_device_id = detect<T, getDeviceTag>;
+using is_device_id = typename std::is_base_of<device_id_tag, T>::type;
 
 template < typename ExecutionSpace   = void
          , typename Schedule         = void
@@ -233,13 +224,13 @@ template <typename Base, typename T, typename... Traits>
 struct AnalyzePolicy<Base, T, Traits...> : public
   AnalyzePolicy<
       typename std::conditional< is_execution_space<T>::value  , SetExecutionSpace<Base,T>
+    , typename std::conditional< is_device_id<T>::value        , SetDeviceId<Base,T>
     , typename std::conditional< is_schedule_type<T>::value    , SetSchedule<Base,T>
     , typename std::conditional< is_index_type<T>::value       , SetIndexType<Base,T>
     , typename std::conditional< std::is_integral<T>::value    , SetIndexType<Base, IndexType<T> >
     , typename std::conditional< is_iteration_pattern<T>::value, SetIterationPattern<Base,T>
     , typename std::conditional< is_launch_bounds<T>::value    , SetLaunchBounds<Base,T>
     , typename std::conditional< Experimental::is_work_item_property<T>::value, SetWorkItemProperty<Base,T>
-    , typename std::conditional< is_device_id<T>::value, SetDeviceId<Base,T>
     , SetWorkTag<Base,T>
     
     >::type >::type >::type >::type >::type>::type>::type>::type::type
@@ -279,7 +270,13 @@ struct AnalyzePolicy<Base>
                                                      , typename Base::launch_bounds
                                                      >::type;
 
+  using device_id = typename std::conditional< is_void< typename Base::device_id >::value
+                                                     , DeviceId<0>
+                                                     , typename Base::device_id
+                                                     >::type;
+
   using work_item_property = typename Base::work_item_property;
+
 
   using type = PolicyTraitsBase< execution_space
                                , schedule_type
@@ -287,7 +284,8 @@ struct AnalyzePolicy<Base>
                                , index_type
                                , iteration_pattern
                                , launch_bounds
-                               , work_item_property>;
+                               , work_item_property
+                               , device_id >;
 };
 
 template <typename... Traits>
