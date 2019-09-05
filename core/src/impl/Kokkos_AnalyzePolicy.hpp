@@ -50,6 +50,28 @@
 
 namespace Kokkos { namespace Impl {
 
+template <typename...>
+using void_t = void;
+
+// Primary template handles all types not supporting the operation.
+template <typename, template <typename> class, typename = void_t<>>
+struct detect : std::false_type {};
+
+// Specialization recognizes/validates only types supporting the archetype.
+template <typename T, template <typename> class Op>
+struct detect<T, Op, void_t<Op<T>>> : std::true_type {};
+
+template<int N> struct DeviceId {
+  using value = N;
+  using device_id_tag = void;
+};
+
+template<typename T>
+using getDeviceTag = decltype(T::device_id_tag);
+
+template<typename T>
+using is_device_id = detect<T, getDeviceTag>;
+
 template < typename ExecutionSpace   = void
          , typename Schedule         = void
          , typename WorkTag          = void
@@ -57,19 +79,21 @@ template < typename ExecutionSpace   = void
          , typename IterationPattern = void
          , typename LaunchBounds     = void
          , typename MyWorkItemProperty = Kokkos::Experimental::WorkItemProperty::None_t
+         , typename MyDeviceId = void
          >
 struct PolicyTraitsBase
 {
   using type = PolicyTraitsBase< ExecutionSpace, Schedule, WorkTag, IndexType, 
-               IterationPattern, LaunchBounds, MyWorkItemProperty>;
+               IterationPattern, LaunchBounds, MyWorkItemProperty, MyDeviceId>;
 
-  using execution_space   = ExecutionSpace;
-  using schedule_type     = Schedule;
-  using work_tag          = WorkTag;
-  using index_type        = IndexType;
-  using iteration_pattern = IterationPattern;
-  using launch_bounds     = LaunchBounds;
+  using execution_space    = ExecutionSpace;
+  using schedule_type      = Schedule;
+  using work_tag           = WorkTag;
+  using index_type         = IndexType;
+  using iteration_pattern  = IterationPattern;
+  using launch_bounds      = LaunchBounds;
   using work_item_property = MyWorkItemProperty;
+  using device_id = MyDeviceId;
 };
 
 template <typename PolicyBase, typename Property>
@@ -84,6 +108,7 @@ struct SetWorkItemProperty
                                , typename PolicyBase::iteration_pattern
                                , typename PolicyBase::launch_bounds
                                , Property
+                               , typename PolicyBase::device_id
                                >;
 };
 
@@ -99,6 +124,7 @@ struct SetExecutionSpace
                                , typename PolicyBase::iteration_pattern
                                , typename PolicyBase::launch_bounds
                                , typename PolicyBase::work_item_property
+                               , typename PolicyBase::device_id
                                >;
 };
 
@@ -114,6 +140,7 @@ struct SetSchedule
                                , typename PolicyBase::iteration_pattern
                                , typename PolicyBase::launch_bounds
                                , typename PolicyBase::work_item_property
+                               , typename PolicyBase::device_id
                                >;
 };
 
@@ -129,6 +156,7 @@ struct SetWorkTag
                                , typename PolicyBase::iteration_pattern
                                , typename PolicyBase::launch_bounds
                                , typename PolicyBase::work_item_property
+                               , typename PolicyBase::device_id
                                >;
 };
 
@@ -144,6 +172,7 @@ struct SetIndexType
                                , typename PolicyBase::iteration_pattern
                                , typename PolicyBase::launch_bounds
                                , typename PolicyBase::work_item_property
+                               , typename PolicyBase::device_id
                                >;
 };
 
@@ -160,6 +189,7 @@ struct SetIterationPattern
                                , IterationPattern
                                , typename PolicyBase::launch_bounds
                                , typename PolicyBase::work_item_property
+                               , typename PolicyBase::device_id
                                >;
 };
 
@@ -176,9 +206,25 @@ struct SetLaunchBounds
                                , typename PolicyBase::iteration_pattern
                                , LaunchBounds
                                , typename PolicyBase::work_item_property
+                               , typename PolicyBase::device_id
                                >;
 };
 
+template <typename PolicyBase, typename DeviceId>
+struct SetDeviceId
+{
+  static_assert( is_void<typename PolicyBase::device_id>::value
+               , "Kokkos Error: More than one device_id given" );
+  using type = PolicyTraitsBase< typename PolicyBase::execution_space
+                               , typename PolicyBase::schedule_type
+                               , typename PolicyBase::work_tag
+                               , typename PolicyBase::index_type
+                               , typename PolicyBase::iteration_pattern
+                               , typename PolicyBase::launch_bounds
+                               , typename PolicyBase::work_item_property
+                               , DeviceId
+                               >;
+};
 
 template <typename Base, typename... Traits>
 struct AnalyzePolicy;
@@ -193,8 +239,10 @@ struct AnalyzePolicy<Base, T, Traits...> : public
     , typename std::conditional< is_iteration_pattern<T>::value, SetIterationPattern<Base,T>
     , typename std::conditional< is_launch_bounds<T>::value    , SetLaunchBounds<Base,T>
     , typename std::conditional< Experimental::is_work_item_property<T>::value, SetWorkItemProperty<Base,T>
+    , typename std::conditional< is_device_id<T>::value, SetDeviceId<Base,T>
     , SetWorkTag<Base,T>
-    >::type >::type >::type >::type >::type>::type>::type::type
+    
+    >::type >::type >::type >::type >::type>::type>::type>::type::type
   , Traits...
   >
 {};
