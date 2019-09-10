@@ -55,7 +55,7 @@ struct device_id_tag {};
 
 template <int N>
 struct DeviceId : public device_id_tag {
-  constexpr static int id = N;
+  constexpr static int value = N;
   using device_id         = void;
 };
 
