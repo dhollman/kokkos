@@ -143,6 +143,17 @@ struct MemorySpaceAccess<
   enum { deepcopy = MemorySpaceAccess<BaseSpace, OtherSpace>::deepcopy };
 };
 
+template <const char* const* Name, typename BaseSpace,
+          typename DefaultExecutionSpace>
+struct MemorySpaceAccess<
+    HostSpace,
+    Kokkos::LogicalMemorySpace<Name, BaseSpace, DefaultExecutionSpace, true>
+    > {
+  enum { assignable = true };
+  enum { accessible = true };
+  enum { deepcopy =  true };
+};
+
 }  // namespace Impl
 
 }  // namespace Kokkos
