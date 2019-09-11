@@ -51,11 +51,22 @@
 namespace Kokkos {
 namespace Impl {
 
+struct device_id_tag {};
+
+template <int N>
+struct DeviceId : public device_id_tag {
+  constexpr static int value = N;
+  using device_id         = void;
+};
+
+template <typename T>
+using is_device_id = typename std::is_base_of<device_id_tag, T>::type;
+
 template <typename ExecutionSpace = void, typename Schedule = void,
           typename WorkTag = void, typename IndexType = void,
           typename IterationPattern = void, typename LaunchBounds = void,
           typename MyWorkItemProperty =
-              Kokkos::Experimental::WorkItemProperty::None_t>
+              Kokkos::Experimental::WorkItemProperty::None_t, typename MyDeviceId=void>
 struct PolicyTraitsBase {
   using type =
       PolicyTraitsBase<ExecutionSpace, Schedule, WorkTag, IndexType,
@@ -68,6 +79,7 @@ struct PolicyTraitsBase {
   using iteration_pattern  = IterationPattern;
   using launch_bounds      = LaunchBounds;
   using work_item_property = MyWorkItemProperty;
+  using device_id          = MyDeviceId;
 };
 
 template <typename PolicyBase, typename Property>
@@ -80,56 +92,56 @@ struct SetWorkItemProperty {
       typename PolicyBase::execution_space, typename PolicyBase::schedule_type,
       typename PolicyBase::work_tag, typename PolicyBase::index_type,
       typename PolicyBase::iteration_pattern,
-      typename PolicyBase::launch_bounds, Property>;
+      typename PolicyBase::launch_bounds, Property,
+      typename PolicyBase::device_id>;
 };
 
 template <typename PolicyBase, typename ExecutionSpace>
 struct SetExecutionSpace {
   static_assert(is_void<typename PolicyBase::execution_space>::value,
                 "Kokkos Error: More than one execution space given");
-  using type =
-      PolicyTraitsBase<ExecutionSpace, typename PolicyBase::schedule_type,
-                       typename PolicyBase::work_tag,
-                       typename PolicyBase::index_type,
-                       typename PolicyBase::iteration_pattern,
-                       typename PolicyBase::launch_bounds,
-                       typename PolicyBase::work_item_property>;
+  using type = PolicyTraitsBase<
+      ExecutionSpace, typename PolicyBase::schedule_type,
+      typename PolicyBase::work_tag, typename PolicyBase::index_type,
+      typename PolicyBase::iteration_pattern,
+      typename PolicyBase::launch_bounds,
+      typename PolicyBase::work_item_property, typename PolicyBase::device_id>;
 };
 
 template <typename PolicyBase, typename Schedule>
 struct SetSchedule {
   static_assert(is_void<typename PolicyBase::schedule_type>::value,
                 "Kokkos Error: More than one schedule type given");
-  using type = PolicyTraitsBase<typename PolicyBase::execution_space, Schedule,
-                                typename PolicyBase::work_tag,
-                                typename PolicyBase::index_type,
-                                typename PolicyBase::iteration_pattern,
-                                typename PolicyBase::launch_bounds,
-                                typename PolicyBase::work_item_property>;
+  using type = PolicyTraitsBase<
+      typename PolicyBase::execution_space, Schedule,
+      typename PolicyBase::work_tag, typename PolicyBase::index_type,
+      typename PolicyBase::iteration_pattern,
+      typename PolicyBase::launch_bounds,
+      typename PolicyBase::work_item_property, typename PolicyBase::device_id>;
 };
 
 template <typename PolicyBase, typename WorkTag>
 struct SetWorkTag {
   static_assert(is_void<typename PolicyBase::work_tag>::value,
                 "Kokkos Error: More than one work tag given");
-  using type = PolicyTraitsBase<typename PolicyBase::execution_space,
-                                typename PolicyBase::schedule_type, WorkTag,
-                                typename PolicyBase::index_type,
-                                typename PolicyBase::iteration_pattern,
-                                typename PolicyBase::launch_bounds,
-                                typename PolicyBase::work_item_property>;
+  using type = PolicyTraitsBase<
+      typename PolicyBase::execution_space, typename PolicyBase::schedule_type,
+      WorkTag, typename PolicyBase::index_type,
+      typename PolicyBase::iteration_pattern,
+      typename PolicyBase::launch_bounds,
+      typename PolicyBase::work_item_property, typename PolicyBase::device_id>;
 };
 
 template <typename PolicyBase, typename IndexType>
 struct SetIndexType {
   static_assert(is_void<typename PolicyBase::index_type>::value,
                 "Kokkos Error: More than one index type given");
-  using type = PolicyTraitsBase<typename PolicyBase::execution_space,
-                                typename PolicyBase::schedule_type,
-                                typename PolicyBase::work_tag, IndexType,
-                                typename PolicyBase::iteration_pattern,
-                                typename PolicyBase::launch_bounds,
-                                typename PolicyBase::work_item_property>;
+  using type = PolicyTraitsBase<
+      typename PolicyBase::execution_space, typename PolicyBase::schedule_type,
+      typename PolicyBase::work_tag, IndexType,
+      typename PolicyBase::iteration_pattern,
+      typename PolicyBase::launch_bounds,
+      typename PolicyBase::work_item_property, typename PolicyBase::device_id>;
 };
 
 template <typename PolicyBase, typename IterationPattern>
@@ -140,7 +152,7 @@ struct SetIterationPattern {
       typename PolicyBase::execution_space, typename PolicyBase::schedule_type,
       typename PolicyBase::work_tag, typename PolicyBase::index_type,
       IterationPattern, typename PolicyBase::launch_bounds,
-      typename PolicyBase::work_item_property>;
+      typename PolicyBase::work_item_property, typename PolicyBase::device_id>;
 };
 
 template <typename PolicyBase, typename LaunchBounds>
@@ -151,7 +163,19 @@ struct SetLaunchBounds {
       typename PolicyBase::execution_space, typename PolicyBase::schedule_type,
       typename PolicyBase::work_tag, typename PolicyBase::index_type,
       typename PolicyBase::iteration_pattern, LaunchBounds,
-      typename PolicyBase::work_item_property>;
+      typename PolicyBase::work_item_property, typename PolicyBase::device_id>;
+};
+
+template <typename PolicyBase, typename DeviceId>
+struct SetDeviceId {
+  static_assert(is_void<typename PolicyBase::device_id>::value,
+                "Kokkos Error: More than one device_id given");
+  using type = PolicyTraitsBase<
+      typename PolicyBase::execution_space, typename PolicyBase::schedule_type,
+      typename PolicyBase::work_tag, typename PolicyBase::index_type,
+      typename PolicyBase::iteration_pattern,
+      typename PolicyBase::launch_bounds,
+      typename PolicyBase::work_item_property, DeviceId>;
 };
 
 template <typename Base, typename... Traits>
@@ -163,24 +187,28 @@ struct AnalyzePolicy<Base, T, Traits...>
           typename std::conditional<
               is_execution_space<T>::value, SetExecutionSpace<Base, T>,
               typename std::conditional<
-                  is_schedule_type<T>::value, SetSchedule<Base, T>,
+                  is_device_id<T>::value, SetDeviceId<Base, T>,
                   typename std::conditional<
-                      is_index_type<T>::value, SetIndexType<Base, T>,
+                      is_schedule_type<T>::value, SetSchedule<Base, T>,
                       typename std::conditional<
-                          std::is_integral<T>::value,
-                          SetIndexType<Base, IndexType<T> >,
+                          is_index_type<T>::value, SetIndexType<Base, T>,
                           typename std::conditional<
-                              is_iteration_pattern<T>::value,
-                              SetIterationPattern<Base, T>,
+                              std::is_integral<T>::value,
+                              SetIndexType<Base, IndexType<T> >,
                               typename std::conditional<
-                                  is_launch_bounds<T>::value,
-                                  SetLaunchBounds<Base, T>,
+                                  is_iteration_pattern<T>::value,
+                                  SetIterationPattern<Base, T>,
                                   typename std::conditional<
-                                      Experimental::is_work_item_property<
-                                          T>::value,
-                                      SetWorkItemProperty<Base, T>,
-                                      SetWorkTag<Base, T> >::type>::type>::
-                              type>::type>::type>::type>::type::type,
+                                      is_launch_bounds<T>::value,
+                                      SetLaunchBounds<Base, T>,
+                                      typename std::conditional<
+                                          Experimental::is_work_item_property<
+                                              T>::value,
+                                          SetWorkItemProperty<Base, T>,
+                                          SetWorkTag<Base, T>
+
+                                          >::type>::type>::type>::type>::type>::
+                      type>::type>::type::type,
           Traits...> {};
 
 template <typename Base>
@@ -215,11 +243,15 @@ struct AnalyzePolicy<Base> {
                                 LaunchBounds<>,
                                 typename Base::launch_bounds>::type;
 
+  using device_id =
+      typename std::conditional<is_void<typename Base::device_id>::value,
+                                DeviceId<0>, typename Base::device_id>::type;
+
   using work_item_property = typename Base::work_item_property;
 
-  using type =
-      PolicyTraitsBase<execution_space, schedule_type, work_tag, index_type,
-                       iteration_pattern, launch_bounds, work_item_property>;
+  using type = PolicyTraitsBase<execution_space, schedule_type, work_tag,
+                                index_type, iteration_pattern, launch_bounds,
+                                work_item_property, device_id>;
 };
 
 template <typename... Traits>

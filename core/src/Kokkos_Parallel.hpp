@@ -124,6 +124,11 @@ struct FunctorPolicyExecutionSpace<
   typedef typename Functor::execution_space execution_space;
 };
 
+template<typename Policy>
+struct PolicyDeviceId {
+    constexpr static int value = Policy::device_id::value;
+};
+
 }  // namespace Impl
 }  // namespace Kokkos
 
@@ -165,7 +170,7 @@ inline void parallel_for(
     Kokkos::Impl::ParallelConstructName<FunctorType,
                                         typename ExecPolicy::work_tag>
         name(str);
-    Kokkos::Profiling::beginParallelFor(name.get(), 0, &kpID);
+    Kokkos::Profiling::beginParallelFor(name.get(), Kokkos::Impl::PolicyDeviceId<ExecPolicy>::value, &kpID);
   }
 #endif
 
