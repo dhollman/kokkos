@@ -330,18 +330,15 @@ namespace Impl {
 
 #define PAR_DEEP_COPY_USE_MEMCPY
 
-// template <class ExecutionSpace>
-// struct DeepCopy<HostSpace, HostSpace, ExecutionSpace> {
-//  DeepCopy(void* dst, const void* src, size_t n) {
-//    hostspace_parallel_deepcopy(dst, src, n);
-//  }
-//
-//  DeepCopy(const ExecutionSpace& exec, void* dst, const void* src, size_t n) {
-//    exec.fence();
-//    hostspace_parallel_deepcopy(dst, src, n);
-//    exec.fence();
-//  }
-//};
+template<const char* const Name, class BaseSpace, class DefaultExecutionSpace, bool SharesAccessSemanticsWithBase, class ExecutionSpace>
+struct DeepCopy<Kokkos::LogicalMemorySpace<Name, BaseSpace, DefaultExecutionSpace, SharesAccessSemanticsWithBase>,Kokkos::LogicalMemorySpace<Name, BaseSpace, DefaultExecutionSpace, SharesAccessSemanticsWithBase>,ExecutionSpace> {
+  DeepCopy(void* dst, void* src, size_t n){
+    DeepCopy<BaseSpace, BaseSpace, ExecutionSpace>(dst, src, n);
+  }
+  DeepCopy(const ExecutionSpace& exec, void* dst, void* src, size_t n){
+    DeepCopy<BaseSpace, BaseSpace, ExecutionSpace>(exec, dst, src, n);
+  }
+};
 
 }  // namespace Impl
 
