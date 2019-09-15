@@ -158,6 +158,11 @@ void finalize_all();
 
 void fence();
 
+template <class ExecutionSpace>
+void fence(ExecutionSpace const& ex) {
+  ex.impl_static_fence();
+}
+
 /** \brief Print "Bill of Materials" */
 void print_configuration(std::ostream&, const bool detail = false);
 

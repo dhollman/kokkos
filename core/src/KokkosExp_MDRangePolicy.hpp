@@ -203,6 +203,7 @@ struct MDRangePolicy : public Kokkos::Impl::PolicyTraits<Properties...> {
     init(lower, upper, tile);
   }
 
+#if 0
   template <typename LT, typename UT, typename TT = array_index_type>
   MDRangePolicy(const typename traits::execution_space& work_space,
                 std::initializer_list<LT> const& lower,
@@ -222,7 +223,24 @@ struct MDRangePolicy : public Kokkos::Impl::PolicyTraits<Properties...> {
         m_prod_tile_dims(1) {
     init();
   }
+#endif
 
+#if defined(KOKKOS_ENABLE_CXX17)
+  template <class ExecutionSpace>
+  MDRangePolicy(ExecutionSpace const& work_space,
+                Kokkos::Array<long, 2> const& lower,
+                Kokkos::Array<long, 2> const& upper)
+          : m_space(work_space),
+            m_lower(lower),
+            m_upper(upper),
+            m_tile(tile_type{}),
+            m_num_tiles(1),
+            m_prod_tile_dims(1) {
+      init();
+  }
+#endif
+
+#if 0
   MDRangePolicy(const typename traits::execution_space& work_space,
                 point_type const& lower, point_type const& upper,
                 tile_type const& tile = tile_type{})
@@ -234,6 +252,7 @@ struct MDRangePolicy : public Kokkos::Impl::PolicyTraits<Properties...> {
         m_prod_tile_dims(1) {
     init();
   }
+#endif
 
   template <class... OtherProperties>
   MDRangePolicy(const MDRangePolicy<OtherProperties...> p)
@@ -508,6 +527,13 @@ struct MDRangePolicy : public Kokkos::Impl::PolicyTraits<Properties...> {
 #endif
   }
 };
+#if defined(KOKKOS_ENABLE_CXX17)
+template <class ExecutionSpace>
+MDRangePolicy(ExecutionSpace const& work_space,
+              Kokkos::Array<long, 2> const& lower,
+              Kokkos::Array<long, 2> const& upper)
+  -> MDRangePolicy<ExecutionSpace, Rank<2>, Impl::DeviceId<0>>;
+#endif
 
 }  // namespace Kokkos
 
