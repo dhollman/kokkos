@@ -532,7 +532,8 @@ template <class ExecutionSpace>
 MDRangePolicy(ExecutionSpace const& work_space,
               Kokkos::Array<long, 2> const& lower,
               Kokkos::Array<long, 2> const& upper)
-  -> MDRangePolicy<ExecutionSpace, Rank<2>, Impl::DeviceId<0>>;
+  //-> MDRangePolicy<ExecutionSpace, Rank<2>, Impl::DeviceId<0>>;
+    -> MDRangePolicy<ExecutionSpace, Rank<2>, Impl::DeviceId<1>>;
 #endif
 
 }  // namespace Kokkos
