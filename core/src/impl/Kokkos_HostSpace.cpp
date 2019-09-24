@@ -440,7 +440,8 @@ namespace Kokkos {
 namespace {
 const unsigned HOST_SPACE_ATOMIC_MASK     = 0xFFFF;
 const unsigned HOST_SPACE_ATOMIC_XOR_MASK = 0x5A39;
-static int HOST_SPACE_ATOMIC_LOCKS[HOST_SPACE_ATOMIC_MASK + 1];
+//static int HOST_SPACE_ATOMIC_LOCKS[HOST_SPACE_ATOMIC_MASK + 1];
+static std::atomic<int> HOST_SPACE_ATOMIC_LOCKS[HOST_SPACE_ATOMIC_MASK + 1] = { };
 }  // namespace
 
 namespace Impl {
@@ -473,11 +474,16 @@ bool lock_address_host_space(void *ptr) {
     return 1;
   } else {
 #endif
-    return 0 == atomic_compare_exchange(
-                    &HOST_SPACE_ATOMIC_LOCKS[((size_t(ptr) >> 2) &
-                                              HOST_SPACE_ATOMIC_MASK) ^
-                                             HOST_SPACE_ATOMIC_XOR_MASK],
-                    0, 1);
+    //return 0 == atomic_compare_exchange(
+    //                &HOST_SPACE_ATOMIC_LOCKS[((size_t(ptr) >> 2) &
+    //                                          HOST_SPACE_ATOMIC_MASK) ^
+    //                                         HOST_SPACE_ATOMIC_XOR_MASK],
+    //                0, 1);
+    auto lock_id = ((size_t(ptr) >> 2)
+            & HOST_SPACE_ATOMIC_MASK) ^ HOST_SPACE_ATOMIC_XOR_MASK;
+    auto& lock = HOST_SPACE_ATOMIC_LOCKS[lock_id];
+    int expected = 0;
+    return lock.compare_exchange_strong(expected, 1);
 #if defined(KOKKOS_ENABLE_ISA_X86_64) && defined(KOKKOS_ENABLE_TM) && \
     !defined(KOKKOS_COMPILER_PGI)
   }

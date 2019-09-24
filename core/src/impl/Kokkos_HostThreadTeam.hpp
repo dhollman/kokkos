@@ -95,7 +95,11 @@ class HostThreadTeamData {
 
   using pair_int_t = Kokkos::pair<int64_t, int64_t>;
 
-  pair_int_t m_work_range;
+  struct pair_int_int {
+    int first;
+    int second;
+  };
+  std::atomic<pair_int_int> m_work_range;
   int64_t m_work_end;
   int64_t* m_scratch;       // per-thread buffer
   int64_t* m_pool_scratch;  // == pool[0]->m_scratch
@@ -185,7 +189,7 @@ class HostThreadTeamData {
   //----------------------------------------
 
   constexpr HostThreadTeamData() noexcept
-      : m_work_range(-1, -1),
+      : m_work_range({-1, -1}),
         m_work_end(0),
         m_scratch(0),
         m_pool_scratch(0),
@@ -385,8 +389,7 @@ fflush(stdout);
     int const num  = (m_work_end + m_work_chunk - 1) / m_work_chunk;
     int const part = (num + m_league_size - 1) / m_league_size;
 
-    m_work_range.first  = part * m_league_rank;
-    m_work_range.second = m_work_range.first + part;
+    m_work_range.store({part * m_league_rank, part * m_league_rank + part});
 
     // Steal from next team, round robin
     // The next team is offset by m_team_alloc if it fits in the pool.
@@ -397,8 +400,8 @@ fflush(stdout);
   }
 
   std::pair<int64_t, int64_t> get_work_partition() noexcept {
-    int64_t first  = m_work_range.first;
-    int64_t second = m_work_range.second;
+    int64_t first  = m_work_range.load().first;
+    int64_t second = m_work_range.load().second;
     first *= m_work_chunk;
     second *= m_work_chunk;
     return std::pair<int64_t, int64_t>(

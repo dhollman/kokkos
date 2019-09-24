@@ -127,8 +127,9 @@ class ParallelFor<FunctorType, Kokkos::RangePolicy<Traits...>, Kokkos::OpenMP> {
                                 m_policy.chunk_size());
 
         if (is_dynamic) {
+#pragma omp barrier
           // Make sure work partition is set before stealing
-          if (data.pool_rendezvous()) data.pool_rendezvous_release();
+          //if (data.pool_rendezvous()) data.pool_rendezvous_release();
         }
 
         std::pair<int64_t, int64_t> range(0, 0);
@@ -212,8 +213,9 @@ class ParallelFor<FunctorType, Kokkos::MDRangePolicy<Traits...>,
                                 m_policy.chunk_size());
 
         if (is_dynamic) {
+#pragma omp barrier
           // Make sure work partition is set before stealing
-          if (data.pool_rendezvous()) data.pool_rendezvous_release();
+          //if (data.pool_rendezvous()) data.pool_rendezvous_release();
         }
 
         std::pair<int64_t, int64_t> range(0, 0);
@@ -336,6 +338,7 @@ class ParallelReduce<FunctorType, Kokkos::RangePolicy<Traits...>, ReducerType,
                               m_policy.chunk_size());
 
       if (is_dynamic) {
+#pragma omp barrier
         // Make sure work partition is set before stealing
         if (data.pool_rendezvous()) data.pool_rendezvous_release();
       }
@@ -497,8 +500,9 @@ class ParallelReduce<FunctorType, Kokkos::MDRangePolicy<Traits...>, ReducerType,
                               m_policy.chunk_size());
 
       if (is_dynamic) {
+#pragma omp barrier
         // Make sure work partition is set before stealing
-        if (data.pool_rendezvous()) data.pool_rendezvous_release();
+        //if (data.pool_rendezvous()) data.pool_rendezvous_release();
       }
 
       reference_type update =
@@ -928,9 +932,10 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
       }
 
       if (is_dynamic) {
+#pragma omp barrier
         // Must synchronize to make sure each team has set its
         // partition before begining the work stealing loop.
-        if (data.pool_rendezvous()) data.pool_rendezvous_release();
+        //if (data.pool_rendezvous()) data.pool_rendezvous_release();
       }
 
       if (active) {
@@ -1075,9 +1080,10 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
       }
 
       if (is_dynamic) {
+#pragma omp barrier
         // Must synchronize to make sure each team has set its
         // partition before begining the work stealing loop.
-        if (data.pool_rendezvous()) data.pool_rendezvous_release();
+        //if (data.pool_rendezvous()) data.pool_rendezvous_release();
       }
 
       if (active) {
