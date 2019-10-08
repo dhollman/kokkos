@@ -129,7 +129,8 @@ struct test_dual_view_deep_copy {
     const unsigned int sum_total = n * m;
 
     ViewType a("A", n, m);
-    ViewType b("B", n, m);
+    ViewType b("B", 0, 0);
+    b.resize(n, m);
 
     Kokkos::deep_copy(a.d_view, 1);
 
