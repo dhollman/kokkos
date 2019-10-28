@@ -203,7 +203,7 @@ struct test_dualview_resize {
     
     /* Covers case "Resize on Device" */
     a.modify_device();
-    a.resize(factor*n, factor*m);
+    Kokkos::resize(a, factor*n, factor*m);
     Kokkos::deep_copy(a.d_view, 1);
     a.sync_host();
 
@@ -274,7 +274,7 @@ struct test_dualview_realloc {
     const unsigned int m = 5;
     
     ViewType a("A", n, m);
-    a.realloc(n, m);
+    Kokkos::realloc(a, n, m);
 
     Kokkos::deep_copy(a.d_view, 1);
     a.modify_device();
