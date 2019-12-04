@@ -449,7 +449,7 @@ class RunnableTaskBase
  public:
   template <class... Args>
   // requires std::is_constructible_v<base_t, Args&&...>
-  KOKKOS_INLINE_FUNCTION  explicit RunnableTaskBase(
+  KOKKOS_INLINE_FUNCTION constexpr explicit RunnableTaskBase(
       function_type apply_function_ptr, Args&&... args)
       : base_t(std::forward<Args>(args)...), m_apply(apply_function_ptr) {}
 
