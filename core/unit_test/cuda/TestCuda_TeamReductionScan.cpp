@@ -80,4 +80,19 @@ TEST(TEST_CATEGORY, team_double_reduce) {
       100000);
 }
 
+TEST(TEST_CATEGORY, team_complex_reduce) {
+  TestReduceTeam<Kokkos::complex<double>, TEST_EXECSPACE,
+                 Kokkos::Schedule<Kokkos::Static> >(0);
+  TestReduceTeam<Kokkos::complex<double>, TEST_EXECSPACE,
+                 Kokkos::Schedule<Kokkos::Dynamic> >(0);
+  TestReduceTeam<Kokkos::complex<double>, TEST_EXECSPACE,
+                 Kokkos::Schedule<Kokkos::Static> >(3);
+  TestReduceTeam<Kokkos::complex<double>, TEST_EXECSPACE,
+                 Kokkos::Schedule<Kokkos::Dynamic> >(3);
+  TestReduceTeam<Kokkos::complex<double>, TEST_EXECSPACE,
+                 Kokkos::Schedule<Kokkos::Static> >(100000);
+  TestReduceTeam<Kokkos::complex<double>, TEST_EXECSPACE,
+                 Kokkos::Schedule<Kokkos::Dynamic> >(100000);
+}
+
 }  // namespace Test

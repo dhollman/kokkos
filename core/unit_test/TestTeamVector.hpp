@@ -716,6 +716,8 @@ bool Test(int test) {
            test_scalar<long long int, ExecutionSpace>(317, team_size, test);
   passed = passed && test_scalar<float, ExecutionSpace>(317, team_size, test);
   passed = passed && test_scalar<double, ExecutionSpace>(317, team_size, test);
+  passed = passed && test_scalar<Kokkos::complex<double>, ExecutionSpace>(
+                         317, team_size, test);
   passed = passed &&
            test_scalar<Test::my_complex, ExecutionSpace>(317, team_size, test);
   passed = passed && test_scalar<Test::array_reduce<double, 1>, ExecutionSpace>(
