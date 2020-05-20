@@ -179,8 +179,6 @@ struct CombinedReducerStorageImpl {
 //------------------------------------------------------------------------------
 
 struct _construct_combined_reducer_from_args_tag {};
-template <class...>
-struct __TYPE_DISPLAY__;
 
 template <class IdxSeq, class Space, class...>
 struct CombinedReducerImpl;
@@ -209,7 +207,9 @@ struct CombinedReducerImpl<integer_sequence<size_t, Idxs...>, Space,
         m_value(refs...),
         m_value_view(&m_value) {}
 
-  // TODO check if this gets used
+  // TODO check if this gets used (it's part of the reducer concept, but we may
+  //  want to remove it from here later anyway since this is an implementation
+  //  detail).
   KOKKOS_FUNCTION
   constexpr explicit CombinedReducerImpl(
       result_view_type const& arg_view) noexcept
@@ -341,17 +341,16 @@ struct CombinedReductionFunctorWrapperImpl<integer_sequence<size_t, Idxs...>,
   // <editor-fold desc="call operator"> {{{2
 
   template <class IndexOrMemberType>
-  KOKKOS_INLINE_FUNCTION void operator()(IndexOrMemberType&& arg_first,
-                                         value_type& out) const {
+  KOKKOS_FUNCTION void operator()(IndexOrMemberType&& arg_first,
+                                  value_type& out) const {
     m_functor((IndexOrMemberType &&) arg_first,
               out.template get<Idxs, typename Reducers::value_type>()...);
   }
 
   // Tagged version
   template <class Tag, class IndexOrMemberType>
-  KOKKOS_INLINE_FUNCTION void operator()(Tag&& arg_tag,
-                                         IndexOrMemberType&& arg_first,
-                                         value_type& out) const {
+  KOKKOS_FUNCTION void operator()(Tag&& arg_tag, IndexOrMemberType&& arg_first,
+                                  value_type& out) const {
     m_functor((Tag &&) arg_tag, (IndexOrMemberType &&) arg_first,
               out.template get<Idxs, typename Reducers::value_type>()...);
   }
@@ -359,6 +358,9 @@ struct CombinedReductionFunctorWrapperImpl<integer_sequence<size_t, Idxs...>,
   // </editor-fold> end call operator }}}2
   //----------------------------------------------------------------------------
 
+  // These are things that need to be done if we decide to ever support
+  // functor-customized join/init/final hooks with combined reducers. For now,
+  // they are explicitly not supported.
   // TODO: forward join() function to user functor hook, or just ignore it?
   // TODO: forward init() function to user functor hook, or just ignore it?
   // TODO: forward final() function to user functor hook, or just ignore it?
