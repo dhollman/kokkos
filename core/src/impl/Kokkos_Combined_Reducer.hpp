@@ -179,7 +179,8 @@ struct CombinedReducerStorageImpl {
 //------------------------------------------------------------------------------
 
 struct _construct_combined_reducer_from_args_tag {};
-template <class...> struct __TYPE_DISPLAY__;
+template <class...>
+struct __TYPE_DISPLAY__;
 
 template <class IdxSeq, class Space, class...>
 struct CombinedReducerImpl;
@@ -240,7 +241,7 @@ struct CombinedReducerImpl<integer_sequence<size_t, Idxs...>, Space,
             src.template get<Idxs, typename Reducers::value_type>())...);
   }
 
-KOKKOS_FUNCTION
+  KOKKOS_FUNCTION
   void init(value_type& dest) const noexcept {
     emulate_fold_comma_operator(
         this->CombinedReducerStorageImpl<Idxs, Reducers>::_init(
@@ -267,16 +268,24 @@ KOKKOS_FUNCTION
   constexpr void write_value_back_to_original_references(
       Reducers const&... reducers_that_reference_original_values)
       const noexcept {
-    emulate_fold_comma_operator((
-        reducers_that_reference_original_values.view()() =
-            m_value.template get<Idxs, typename Reducers::value_type>())...);
+    emulate_fold_comma_operator(
+        (reducers_that_reference_original_values.view()() =
+             m_value.template get<Idxs, typename Reducers::value_type>())...);
   }
 };
 
+// Apparently this can't be an alias template because of a bug/unimplemented
+// feature in GCC's name mangler.  But in this case, this amounts to the same
+// thing.
 template <class Space, class... Reducers>
-using CombinedReducer =
-    CombinedReducerImpl<make_index_sequence<sizeof...(Reducers)>, Space,
-                        Reducers...>;
+struct CombinedReducer
+    : CombinedReducerImpl<make_index_sequence<sizeof...(Reducers)>, Space,
+                          Reducers...> {
+  using base_t = CombinedReducerImpl<make_index_sequence<sizeof...(Reducers)>,
+                                     Space, Reducers...>;
+  using base_t::base_t;
+  using reducer = CombinedReducer<Space, Reducers...>;
+};
 
 //==============================================================================
 
@@ -358,8 +367,17 @@ struct CombinedReductionFunctorWrapperImpl<integer_sequence<size_t, Idxs...>,
 //==============================================================================
 
 template <class Functor, class Space, class... Reducers>
-using CombinedReductionFunctorWrapper = CombinedReductionFunctorWrapperImpl<
-    make_index_sequence<sizeof...(Reducers)>, Functor, Space, Reducers...>;
+struct CombinedReductionFunctorWrapper
+    : CombinedReductionFunctorWrapperImpl<
+          make_index_sequence<sizeof...(Reducers)>, Functor, Space,
+          Reducers...> {
+  using base_t = CombinedReductionFunctorWrapperImpl<
+      make_index_sequence<sizeof...(Reducers)>, Functor, Space, Reducers...>;
+  using base_t::base_t;
+};
+
+//------------------------------------------------------------------------------
+// <editor-fold desc="_make_reducer_from_arg"> {{{2
 
 template <class Space, class Reducer>
 KOKKOS_INLINE_FUNCTION constexpr typename std::enable_if<
@@ -386,37 +404,53 @@ struct _wrap_with_kokkos_sum<
 template <class Space, class T>
 KOKKOS_INLINE_FUNCTION constexpr typename std::enable_if<
     !Kokkos::is_reducer<typename std::decay<T>::type>::value,
-    _wrap_with_kokkos_sum<Space, typename std::decay<T>::type> >::type::type
+    _wrap_with_kokkos_sum<Space, typename std::decay<T>::type>>::type::type
 _make_reducer_from_arg(T& arg_scalar) noexcept {
   return
       typename _wrap_with_kokkos_sum<Space, typename std::decay<T>::type>::type{
           arg_scalar};
 }
 
+// This can't be an alias template because GCC doesn't know how to mangle
+// decltype expressions in return statements (and, even though every compiler
+// is supposed to, GCC is the only one that does dependent alias template
+// substitution correctly and tries to do the mangling, aparently).
+template <class Space, class ReferenceOrViewOrReducer, class = void>
+struct _reducer_from_arg {
+  using type = decltype(Impl::_make_reducer_from_arg<Space>(
+      std::declval<ReferenceOrViewOrReducer&&>()));
+};
+template <class Space, class ReferenceOrViewOrReducer>
+using _reducer_from_arg_t =
+    typename _reducer_from_arg<Space, ReferenceOrViewOrReducer>::type;
+
+// </editor-fold> end _make_reducer_from_arg }}}2
+//------------------------------------------------------------------------------
+
 template <class Space, class... ReferencesOrViewsOrReducers>
-CombinedReducer<Space, decltype(Impl::_make_reducer_from_arg<Space>(
-                           std::declval<ReferencesOrViewsOrReducers&&>()))...>
-    KOKKOS_INLINE_FUNCTION
-    make_combined_reducer(ReferencesOrViewsOrReducers&&... args) {
-  using reducer_type =
-      CombinedReducer<Space,
-                      decltype(Impl::_make_reducer_from_arg<Space>(
-                          std::declval<ReferencesOrViewsOrReducers&&>()))...>;
+KOKKOS_INLINE_FUNCTION constexpr CombinedReducer<
+    Space,
+    typename _reducer_from_arg<Space, ReferencesOrViewsOrReducers>::type...>
+make_combined_reducer(ReferencesOrViewsOrReducers&&... args) {
+  //----------------------------------------
+  using reducer_type = CombinedReducer<
+      Space, _reducer_from_arg_t<Space, ReferencesOrViewsOrReducers>...>;
   return reducer_type(_construct_combined_reducer_from_args_tag{},
                       (ReferencesOrViewsOrReducers &&) args...);
+  //----------------------------------------
 }
 
 template <class Functor, class Space, class... ReferencesOrViewsOrReducers>
 KOKKOS_INLINE_FUNCTION constexpr CombinedReductionFunctorWrapper<
     Functor, Space,
-    decltype(Impl::_make_reducer_from_arg<Space>(
-        std::declval<ReferencesOrViewsOrReducers>()))...>
+    typename _reducer_from_arg<Space, ReferencesOrViewsOrReducers>::type...>
 make_wrapped_combined_functor(Functor const& functor, Space,
                               ReferencesOrViewsOrReducers&&...) {
+  //----------------------------------------
   return CombinedReductionFunctorWrapper<
       Functor, Space,
-      decltype(Impl::_make_reducer_from_arg<Space>(
-          std::declval<ReferencesOrViewsOrReducers>()))...>(functor);
+      _reducer_from_arg_t<Space, ReferencesOrViewsOrReducers>...>(functor);
+  //----------------------------------------
 }
 
 }  // end namespace Impl
@@ -429,12 +463,12 @@ make_wrapped_combined_functor(Functor const& functor, Space,
 // rvalue references)
 template <class PolicyType, class Functor, class ReturnType1, class ReturnType2,
           class... ReturnTypes>
-typename std::enable_if<
-    Kokkos::Impl::is_execution_policy<PolicyType>::value>::type
-parallel_reduce(std::string const& label, PolicyType const& policy,
-                Functor const& functor, ReturnType1&& returnType1,
-                ReturnType2&& returnType2,
-                ReturnTypes&&... returnTypes) noexcept {
+auto parallel_reduce(std::string const& label, PolicyType const& policy,
+                     Functor const& functor, ReturnType1&& returnType1,
+                     ReturnType2&& returnType2,
+                     ReturnTypes&&... returnTypes) noexcept ->
+    typename std::enable_if<
+        Kokkos::Impl::is_execution_policy<PolicyType>::value>::type {
   // TODO static_assert that none of the ReturnType&& are r-value references?
   // This has to be const because that's currently how Kokkos detects if
   // something is a reducer in the parallel_reduce overload set (!!!)
@@ -463,11 +497,11 @@ parallel_reduce(std::string const& label, PolicyType const& policy,
 
 template <class PolicyType, class Functor, class ReturnType1, class ReturnType2,
           class... ReturnTypes>
-typename std::enable_if<
-    Kokkos::Impl::is_execution_policy<PolicyType>::value>::type
-parallel_reduce(PolicyType const& policy, Functor const& functor,
-                ReturnType1&& returnType1, ReturnType2&& returnType2,
-                ReturnTypes&&... returnTypes) noexcept {
+auto parallel_reduce(PolicyType const& policy, Functor const& functor,
+                     ReturnType1&& returnType1, ReturnType2&& returnType2,
+                     ReturnTypes&&... returnTypes) noexcept ->
+    typename std::enable_if<
+        Kokkos::Impl::is_execution_policy<PolicyType>::value>::type {
   parallel_reduce("", policy, functor, std::forward<ReturnType1>(returnType1),
                   std::forward<ReturnType2>(returnType2),
                   std::forward<ReturnTypes>(returnTypes)...);
