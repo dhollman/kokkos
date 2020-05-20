@@ -255,8 +255,8 @@ struct CombinedReducerImpl<integer_sequence<size_t, Idxs...>, Space,
   //      don't get copy constructed.  This is a general design flaw in Kokkos
   //      reducers that doesn't really need to be solved here.
 
-  KOKKOS_FUNCTION constexpr void join(value_type& dest,
-                                      value_type const& src) const noexcept {
+  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 void join(
+      value_type& dest, value_type const& src) const noexcept {
     emulate_fold_comma_operator(
         this->CombinedReducerStorageImpl<Idxs, Reducers>::_join(
             dest.template get<Idxs, typename Reducers::value_type>(),
@@ -271,7 +271,8 @@ struct CombinedReducerImpl<integer_sequence<size_t, Idxs...>, Space,
             src.template get<Idxs, typename Reducers::value_type>())...);
   }
 
-  KOKKOS_FUNCTION constexpr void init(value_type& dest) const noexcept {
+  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 void init(
+      value_type& dest) const noexcept {
     emulate_fold_comma_operator(
         this->CombinedReducerStorageImpl<Idxs, Reducers>::_init(
             dest.template get<Idxs, typename Reducers::value_type>())...);
