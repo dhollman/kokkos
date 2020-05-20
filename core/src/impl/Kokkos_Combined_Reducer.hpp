@@ -66,7 +66,7 @@ void emulate_fold_comma_operator(Ts&&...) noexcept {}
 //==============================================================================
 
 // Note: the index is only to avoid repeating the same base class multiple times
-template <size_t Idx, class ValueType>
+template <size_t /*Idx*/, class ValueType>
 struct CombinedReducerValueItemImpl {
  public:
   using value_type = ValueType;
