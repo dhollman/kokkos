@@ -233,7 +233,7 @@ class CombinedReduceFunctorSameType {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(size_type iwork, ValueType& dst1, ValueType& dst2,
-                            ValueType& dst3) const {
+                  ValueType& dst3) const {
     dst1 += 1;
     dst2 += iwork + 1;
     dst3 += nwork - iwork;
