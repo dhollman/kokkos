@@ -373,21 +373,21 @@ struct CombinedReductionFunctorWrapperImpl<integer_sequence<size_t, Idxs...>,
   //----------------------------------------------------------------------------
   // <editor-fold desc="Ctors, destructor, and assignment"> {{{2
 
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_DEFAULTED_FUNCTION
   constexpr CombinedReductionFunctorWrapperImpl() noexcept = default;
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_DEFAULTED_FUNCTION
   constexpr CombinedReductionFunctorWrapperImpl(
       CombinedReductionFunctorWrapperImpl const&) = default;
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_DEFAULTED_FUNCTION
   constexpr CombinedReductionFunctorWrapperImpl(
       CombinedReductionFunctorWrapperImpl&&) = default;
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_DEFAULTED_FUNCTION
   KOKKOS_CONSTEXPR_14 CombinedReductionFunctorWrapperImpl& operator=(
       CombinedReductionFunctorWrapperImpl const&) = default;
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_DEFAULTED_FUNCTION
   KOKKOS_CONSTEXPR_14 CombinedReductionFunctorWrapperImpl& operator=(
       CombinedReductionFunctorWrapperImpl&&) = default;
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_DEFAULTED_FUNCTION
   ~CombinedReductionFunctorWrapperImpl() = default;
 
   KOKKOS_INLINE_FUNCTION
