@@ -76,16 +76,16 @@ struct CombinedReducerValueItemImpl {
   value_type m_value;
 
  public:
-  KOKKOS_FUNCTION constexpr CombinedReducerValueItemImpl() = default;
-  KOKKOS_FUNCTION constexpr CombinedReducerValueItemImpl(
+  KOKKOS_DEFAULTED_FUNCTION constexpr CombinedReducerValueItemImpl() = default;
+  KOKKOS_DEFAULTED_FUNCTION constexpr CombinedReducerValueItemImpl(
       CombinedReducerValueItemImpl const&) = default;
-  KOKKOS_FUNCTION constexpr CombinedReducerValueItemImpl(
+  KOKKOS_DEFAULTED_FUNCTION constexpr CombinedReducerValueItemImpl(
       CombinedReducerValueItemImpl&&) = default;
-  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 CombinedReducerValueItemImpl& operator=(
-      CombinedReducerValueItemImpl const&) = default;
-  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 CombinedReducerValueItemImpl& operator=(
-      CombinedReducerValueItemImpl&&) = default;
-  ~CombinedReducerValueItemImpl()     = default;
+  KOKKOS_DEFAULTED_FUNCTION KOKKOS_CONSTEXPR_14 CombinedReducerValueItemImpl&
+  operator=(CombinedReducerValueItemImpl const&) = default;
+  KOKKOS_DEFAULTED_FUNCTION KOKKOS_CONSTEXPR_14 CombinedReducerValueItemImpl&
+  operator=(CombinedReducerValueItemImpl&&) = default;
+  ~CombinedReducerValueItemImpl()           = default;
   explicit KOKKOS_FUNCTION CombinedReducerValueItemImpl(value_type arg_value)
       : m_value(std::move(arg_value)) {}
 
@@ -109,19 +109,19 @@ struct CombinedReducerValueImpl<integer_sequence<size_t, Idxs...>,
                                 ValueTypes...>
     : CombinedReducerValueItemImpl<Idxs, ValueTypes>... {
  public:
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_DEFAULTED_FUNCTION
   constexpr CombinedReducerValueImpl() = default;
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_DEFAULTED_FUNCTION
   constexpr CombinedReducerValueImpl(CombinedReducerValueImpl const&) = default;
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_DEFAULTED_FUNCTION
   constexpr CombinedReducerValueImpl(CombinedReducerValueImpl&&) = default;
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_DEFAULTED_FUNCTION
   KOKKOS_CONSTEXPR_14 CombinedReducerValueImpl& operator=(
       CombinedReducerValueImpl const&) = default;
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_DEFAULTED_FUNCTION
   KOKKOS_CONSTEXPR_14 CombinedReducerValueImpl& operator=(
       CombinedReducerValueImpl&&) = default;
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_DEFAULTED_FUNCTION
   ~CombinedReducerValueImpl() = default;
 
   KOKKOS_FUNCTION
@@ -242,16 +242,17 @@ struct CombinedReducerImpl<integer_sequence<size_t, Idxs...>, Space,
   result_view_type m_value_view;
 
  public:
-  KOKKOS_FUNCTION constexpr CombinedReducerImpl() = default;
-  KOKKOS_FUNCTION constexpr CombinedReducerImpl(CombinedReducerImpl const&) =
-      default;
-  KOKKOS_FUNCTION constexpr CombinedReducerImpl(CombinedReducerImpl&&) =
-      default;
-  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 CombinedReducerImpl& operator=(
+  KOKKOS_DEFAULTED_FUNCTION constexpr CombinedReducerImpl() = default;
+  KOKKOS_DEFAULTED_FUNCTION constexpr CombinedReducerImpl(
       CombinedReducerImpl const&) = default;
-  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 CombinedReducerImpl& operator=(
+  KOKKOS_DEFAULTED_FUNCTION constexpr CombinedReducerImpl(
       CombinedReducerImpl&&) = default;
-  KOKKOS_FUNCTION ~CombinedReducerImpl()                           = default;
+  KOKKOS_DEFAULTED_FUNCTION KOKKOS_CONSTEXPR_14 CombinedReducerImpl& operator=(
+      CombinedReducerImpl const&) = default;
+  KOKKOS_DEFAULTED_FUNCTION KOKKOS_CONSTEXPR_14 CombinedReducerImpl& operator=(
+      CombinedReducerImpl&&) = default;
+
+  KOKKOS_DEFAULTED_FUNCTION ~CombinedReducerImpl() = default;
 
   template <class... ValueReferences>
   KOKKOS_FUNCTION constexpr explicit CombinedReducerImpl(
@@ -530,6 +531,7 @@ auto parallel_reduce(std::string const& label, PolicyType const& policy,
                      ReturnTypes&&... returnTypes) noexcept ->
     typename std::enable_if<
         Kokkos::Impl::is_execution_policy<PolicyType>::value>::type {
+  //----------------------------------------
   using space_type      = Kokkos::AnonymousSpace;
   auto combined_reducer = Impl::make_combined_reducer<space_type>(
       returnType1, returnType2, returnTypes...);
@@ -539,14 +541,14 @@ auto parallel_reduce(std::string const& label, PolicyType const& policy,
       functor, policy.space(), returnType1, returnType2, returnTypes...);
 
   using combined_functor_type = decltype(combined_functor);
-  static_assert(
-      Impl::FunctorDeclaresValueType<combined_functor_type, void>::value,
-      "value_type not properly detected");
+  // static_assert(
+  //    Impl::FunctorDeclaresValueType<combined_functor_type, void>::value,
+  //    "value_type not properly detected");
   using reduce_adaptor_t =
       Impl::ParallelReduceAdaptor<PolicyType, combined_functor_type,
                                   combined_reducer_type>;
 
-  reduce_adaptor_t ::execute(label, policy, combined_functor, combined_reducer);
+  reduce_adaptor_t::execute(label, policy, combined_functor, combined_reducer);
   Impl::ParallelReduceFence<typename PolicyType::execution_space,
                             combined_reducer_type>::fence(policy.space(),
                                                           combined_reducer);
@@ -554,6 +556,7 @@ auto parallel_reduce(std::string const& label, PolicyType const& policy,
       Impl::_make_reducer_from_arg<space_type>(returnType1),
       Impl::_make_reducer_from_arg<space_type>(returnType2),
       Impl::_make_reducer_from_arg<space_type>(returnTypes)...);
+  //----------------------------------------
 }
 
 template <class PolicyType, class Functor, class ReturnType1, class ReturnType2,
@@ -563,10 +566,12 @@ auto parallel_reduce(PolicyType const& policy, Functor const& functor,
                      ReturnTypes&&... returnTypes) noexcept ->
     typename std::enable_if<
         Kokkos::Impl::is_execution_policy<PolicyType>::value>::type {
+  //----------------------------------------
   Kokkos::parallel_reduce("", policy, functor,
                           std::forward<ReturnType1>(returnType1),
                           std::forward<ReturnType2>(returnType2),
                           std::forward<ReturnTypes>(returnTypes)...);
+  //----------------------------------------
 }
 
 template <class Functor, class ReturnType1, class ReturnType2,

@@ -227,12 +227,12 @@ class CombinedReduceFunctorSameType {
   constexpr explicit CombinedReduceFunctorSameType(const size_type& arg_nwork)
       : nwork(arg_nwork) {}
 
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_DEFAULTED_FUNCTION
   constexpr CombinedReduceFunctorSameType(
       const CombinedReduceFunctorSameType& rhs) = default;
 
   KOKKOS_INLINE_FUNCTION
-  constexpr void operator()(size_type iwork, ValueType& dst1, ValueType& dst2,
+  void operator()(size_type iwork, ValueType& dst1, ValueType& dst2,
                             ValueType& dst3) const {
     dst1 += 1;
     dst2 += iwork + 1;
