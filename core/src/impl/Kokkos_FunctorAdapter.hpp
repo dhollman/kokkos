@@ -265,7 +265,7 @@ struct FunctorValueTraits<FunctorType, ArgTag,
   // be an array.
   template <class F>
   KOKKOS_FORCEINLINE_FUNCTION static
-      typename std::enable_if<std::is_same<F, FunctorType>::value && IsArray,
+      typename std::enable_if<std::is_same<F, typename std::decay<FunctorType>::type>::value && IsArray,
                               unsigned>::type
       value_count(const F& f) {
     return f.value_count;

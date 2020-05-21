@@ -536,7 +536,7 @@ TEST(TEST_CATEGORY, int_combined_reduce_mixed) {
   auto result3_v = Kokkos::View<int64_t, Kokkos::HostSpace>{"result3_v"};
 
   Kokkos::parallel_reduce(nw, functor_type(nw), result1_v, result2,
-                          Kokkos::Sum<int64_t, TEST_EXECSPACE>{result3_v});
+                          Kokkos::Sum<int64_t, Kokkos::HostSpace>{result3_v});
 
   ASSERT_EQ(nw, result1_v());
   ASSERT_EQ(nsum, result2);

@@ -61,7 +61,7 @@ namespace Impl {
 struct _fold_comma_emulation_return {};
 
 template <class... Ts>
-void emulate_fold_comma_operator(Ts&&...) noexcept {}
+KOKKOS_INLINE_FUNCTION void emulate_fold_comma_operator(Ts&&...) noexcept {}
 
 //==============================================================================
 // <editor-fold desc="CombinedReducer reducer and value storage helpers"> {{{1
@@ -76,6 +76,16 @@ struct CombinedReducerValueItemImpl {
   value_type m_value;
 
  public:
+  KOKKOS_FUNCTION constexpr CombinedReducerValueItemImpl() = default;
+  KOKKOS_FUNCTION constexpr CombinedReducerValueItemImpl(
+      CombinedReducerValueItemImpl const&) = default;
+  KOKKOS_FUNCTION constexpr CombinedReducerValueItemImpl(
+      CombinedReducerValueItemImpl&&) noexcept = default;
+  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 CombinedReducerValueItemImpl& operator=(
+      CombinedReducerValueItemImpl const&) = default;
+  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 CombinedReducerValueItemImpl& operator=(
+      CombinedReducerValueItemImpl&&) noexcept = default;
+  ~CombinedReducerValueItemImpl()              = default;
   explicit KOKKOS_FUNCTION CombinedReducerValueItemImpl(value_type arg_value)
       : m_value(std::move(arg_value)) {}
 
@@ -97,7 +107,7 @@ struct CombinedReducerValueImpl;
 template <size_t... Idxs, class... ValueTypes>
 struct CombinedReducerValueImpl<integer_sequence<size_t, Idxs...>,
                                 ValueTypes...>
-    : private CombinedReducerValueItemImpl<Idxs, ValueTypes>... {
+    : CombinedReducerValueItemImpl<Idxs, ValueTypes>... {
  public:
   KOKKOS_INLINE_FUNCTION
   constexpr CombinedReducerValueImpl() = default;
@@ -188,7 +198,8 @@ struct CombinedReducerStorageImpl {
 struct _construct_combined_reducer_from_args_tag {};
 
 template <class T>
-auto _get_value_from_combined_reducer_ctor_arg(T&& arg) noexcept ->
+KOKKOS_INLINE_FUNCTION auto _get_value_from_combined_reducer_ctor_arg(
+    T&& arg) noexcept ->
     typename std::enable_if<
         !is_view<typename std::decay<T>::type>::value &&
             !is_reducer<typename std::decay<T>::type>::value,
@@ -197,13 +208,16 @@ auto _get_value_from_combined_reducer_ctor_arg(T&& arg) noexcept ->
 }
 
 template <class T>
-auto _get_value_from_combined_reducer_ctor_arg(T&& arg) noexcept ->
+KOKKOS_INLINE_FUNCTION auto _get_value_from_combined_reducer_ctor_arg(
+    T&& arg) noexcept ->
     typename std::enable_if<is_view<typename std::decay<T>::type>::value,
                             typename std::decay<T>::type>::type::value_type {
   return arg();
 }
+
 template <class T>
-auto _get_value_from_combined_reducer_ctor_arg(T&& arg) noexcept ->
+KOKKOS_INLINE_FUNCTION auto _get_value_from_combined_reducer_ctor_arg(
+    T&& arg) noexcept ->
     typename std::enable_if<is_reducer<typename std::decay<T>::type>::value,
                             typename std::decay<T>::type>::type::value_type {
   return arg.reference();
@@ -229,6 +243,17 @@ struct CombinedReducerImpl<integer_sequence<size_t, Idxs...>, Space,
   result_view_type m_value_view;
 
  public:
+  KOKKOS_FUNCTION constexpr CombinedReducerImpl() = default;
+  KOKKOS_FUNCTION constexpr CombinedReducerImpl(CombinedReducerImpl const&) =
+      default;
+  KOKKOS_FUNCTION constexpr CombinedReducerImpl(
+      CombinedReducerImpl&&) noexcept                              = default;
+  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 CombinedReducerImpl& operator=(
+      CombinedReducerImpl const&) = default;
+  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 CombinedReducerImpl& operator=(
+      CombinedReducerImpl&&) noexcept = default;
+  KOKKOS_FUNCTION ~CombinedReducerImpl()                           = default;
+
   template <class... ValueReferences>
   KOKKOS_FUNCTION constexpr explicit CombinedReducerImpl(
       _construct_combined_reducer_from_args_tag,
@@ -348,7 +373,7 @@ struct CombinedReductionFunctorWrapperImpl<integer_sequence<size_t, Idxs...>,
   // <editor-fold desc="Ctors, destructor, and assignment"> {{{2
 
   KOKKOS_INLINE_FUNCTION
-  constexpr CombinedReductionFunctorWrapperImpl() = default;
+  constexpr CombinedReductionFunctorWrapperImpl() noexcept = default;
   KOKKOS_INLINE_FUNCTION
   constexpr CombinedReductionFunctorWrapperImpl(
       CombinedReductionFunctorWrapperImpl const&) = default;
@@ -505,11 +530,8 @@ auto parallel_reduce(std::string const& label, PolicyType const& policy,
                      ReturnTypes&&... returnTypes) noexcept ->
     typename std::enable_if<
         Kokkos::Impl::is_execution_policy<PolicyType>::value>::type {
-  // TODO static_assert that none of the ReturnType&& are r-value references?
-  // This has to be const because that's currently how Kokkos detects if
-  // something is a reducer in the parallel_reduce overload set (!!!)
-  using space_type = typename std::decay<decltype(policy.space())>::type;
-  const auto combined_reducer = Impl::make_combined_reducer<space_type>(
+  using space_type      = Kokkos::AnonymousSpace;
+  auto combined_reducer = Impl::make_combined_reducer<space_type>(
       returnType1, returnType2, returnTypes...);
   using combined_reducer_type = decltype(combined_reducer);
 
@@ -517,11 +539,14 @@ auto parallel_reduce(std::string const& label, PolicyType const& policy,
       functor, policy.space(), returnType1, returnType2, returnTypes...);
 
   using combined_functor_type = decltype(combined_functor);
+  static_assert(
+      Impl::FunctorDeclaresValueType<combined_functor_type, void>::value,
+      "value_type not properly detected");
+  using reduce_adaptor_t =
+      Impl::ParallelReduceAdaptor<PolicyType, combined_functor_type,
+                                  combined_reducer_type>;
 
-  Impl::ParallelReduceAdaptor<PolicyType, combined_functor_type,
-                              combined_reducer_type>::execute(label, policy,
-                                                              combined_functor,
-                                                              combined_reducer);
+  reduce_adaptor_t ::execute(label, policy, combined_functor, combined_reducer);
   Impl::ParallelReduceFence<typename PolicyType::execution_space,
                             combined_reducer_type>::fence(policy.space(),
                                                           combined_reducer);
