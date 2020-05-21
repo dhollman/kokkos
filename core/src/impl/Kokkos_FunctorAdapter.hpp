@@ -264,10 +264,10 @@ struct FunctorValueTraits<FunctorType, ArgTag,
   // 'f.value_count' will only exist when the functor declares the value_type to
   // be an array.
   template <class F>
-  KOKKOS_FORCEINLINE_FUNCTION static typename std::enable_if<
-      std::is_same<F, typename std::decay<FunctorType>::type>::value && IsArray,
-      unsigned>::type
-  value_count(const F& f) {
+  KOKKOS_FORCEINLINE_FUNCTION static
+      typename std::enable_if<std::is_same<F, FunctorType>::value && IsArray,
+                              unsigned>::type
+      value_count(const F& f) {
     return f.value_count;
   }
 
