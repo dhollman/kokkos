@@ -300,20 +300,10 @@ struct CombinedReducerImpl<integer_sequence<size_t, Idxs...>, Space,
     return m_value_view;
   }
 
-  template <class Reducer>
-  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 static _fold_comma_emulation_return
-  _check_nonnull(Reducer const& reducer) {
-    KOKKOS_EXPECTS(reducer.view().data() != nullptr);
-    return _fold_comma_emulation_return{};
-  }
-
   KOKKOS_FUNCTION
   KOKKOS_CONSTEXPR_14 static void write_value_back_to_original_references(
       value_type const& value,
       Reducers const&... reducers_that_reference_original_values) noexcept {
-    emulate_fold_comma_operator(
-        _check_nonnull(reducers_that_reference_original_values)...);
-
     emulate_fold_comma_operator(
         (reducers_that_reference_original_values.view()() =
              value.template get<Idxs, typename Reducers::value_type>())...);
