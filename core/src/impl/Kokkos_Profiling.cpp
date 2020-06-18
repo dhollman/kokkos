@@ -46,16 +46,16 @@
 #include <impl/Kokkos_Profiling.hpp>
 #if defined(KOKKOS_ENABLE_PROFILING)
 #include <dlfcn.h>
-#endif
-#include <vector>
-#include <array>
-#include <stack>
-
-#if defined(KOKKOS_ENABLE_PROFILING)
 #include <cstring>
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
+#include <vector>
+#include <array>
+#include <stack>
+#include <chrono>
+#include <iostream>
+
 namespace Kokkos {
 
 namespace Tools {
