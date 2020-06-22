@@ -85,7 +85,8 @@ struct CombinedReducerValueItemImpl {
   operator=(CombinedReducerValueItemImpl const&) = default;
   KOKKOS_DEFAULTED_FUNCTION KOKKOS_CONSTEXPR_14 CombinedReducerValueItemImpl&
   operator=(CombinedReducerValueItemImpl&&) = default;
-  ~CombinedReducerValueItemImpl()           = default;
+  KOKKOS_DEFAULTED_FUNCTION
+  ~CombinedReducerValueItemImpl() = default;
   explicit KOKKOS_FUNCTION CombinedReducerValueItemImpl(value_type arg_value)
       : m_value(std::move(arg_value)) {}
 
@@ -130,7 +131,7 @@ struct CombinedReducerValueImpl<integer_sequence<size_t, Idxs...>,
             std::move(arg_values))... {}
 
   template <size_t Idx, class ValueType>
-      KOKKOS_INLINE_FUNCTION ValueType& get() & noexcept {
+  KOKKOS_INLINE_FUNCTION ValueType& get() & noexcept {
     return this->CombinedReducerValueItemImpl<Idx, ValueType>::ref();
   }
   template <size_t Idx, class ValueType>
@@ -260,9 +261,8 @@ struct CombinedReducerImpl<integer_sequence<size_t, Idxs...>, Space,
                                                        reducers)...,
         m_value_view(&value) {}
 
-  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 void join(value_type& dest,
-                                                value_type const& src) const
-      noexcept {
+  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 void join(
+      value_type& dest, value_type const& src) const noexcept {
     emulate_fold_comma_operator(
         this->CombinedReducerStorageImpl<Idxs, Reducers>::_join(
             dest.template get<Idxs, typename Reducers::value_type>(),
@@ -277,8 +277,8 @@ struct CombinedReducerImpl<integer_sequence<size_t, Idxs...>, Space,
             src.template get<Idxs, typename Reducers::value_type>())...);
   }
 
-  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 void init(value_type& dest) const
-      noexcept {
+  KOKKOS_FUNCTION KOKKOS_CONSTEXPR_14 void init(
+      value_type& dest) const noexcept {
     emulate_fold_comma_operator(
         this->CombinedReducerStorageImpl<Idxs, Reducers>::_init(
             dest.template get<Idxs, typename Reducers::value_type>())...);
