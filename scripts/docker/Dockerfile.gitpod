@@ -1,3 +1,5 @@
+FROM gitpod/workspace-full
+
 FROM nvidia/cuda:10.1-devel
 
 RUN apt-get update && apt-get install -y \
@@ -52,4 +54,3 @@ RUN LLVM_VERSION=55b3bcf643685c63fcc529d434bed112fdf03939 && \
     rm -rf ${SCRATCH_DIR}
 ENV PATH=${LLVM_DIR}/bin:$PATH
 
-FROM gitpod/workspace-full
