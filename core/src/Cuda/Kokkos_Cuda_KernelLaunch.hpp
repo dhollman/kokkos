@@ -262,7 +262,7 @@ struct DeduceCudaLaunchMechanism {
 //==============================================================================
 
 //==============================================================================
-// <editor-fold desc="CudaParallelLaunchKernelInfo"> {{{1
+// <editor-fold desc="CudaParallelLaunchKernelInvoker"> {{{1
 
 // Base classes that summarize the differences between the different launch
 // mechanisms
@@ -273,7 +273,7 @@ struct CudaParallelLaunchKernelFunc;
 
 template <class DriverType, class LaunchBounds,
           Experimental::CudaLaunchMechanism LaunchMechanism>
-struct CudaParallelLaunchKernelInfo;
+struct CudaParallelLaunchKernelInvoker;
 
 //------------------------------------------------------------------------------
 // <editor-fold desc="Local memory"> {{{2
@@ -304,7 +304,7 @@ struct CudaParallelLaunchKernelFunc<
 //------------------------------------------------------------------------------
 
 template <class DriverType, class LaunchBounds>
-struct CudaParallelLaunchKernelInfo<
+struct CudaParallelLaunchKernelInvoker<
     DriverType, LaunchBounds, Experimental::CudaLaunchMechanism::LocalMemory>
     : CudaParallelLaunchKernelFunc<
           DriverType, LaunchBounds,
@@ -354,7 +354,7 @@ struct CudaParallelLaunchKernelFunc<
 //------------------------------------------------------------------------------
 
 template <class DriverType, class LaunchBounds>
-struct CudaParallelLaunchKernelInfo<
+struct CudaParallelLaunchKernelInvoker<
     DriverType, LaunchBounds, Experimental::CudaLaunchMechanism::GlobalMemory>
     : CudaParallelLaunchKernelFunc<
           DriverType, LaunchBounds,
@@ -410,7 +410,7 @@ struct CudaParallelLaunchKernelFunc<
 //------------------------------------------------------------------------------
 
 template <class DriverType, class LaunchBounds>
-struct CudaParallelLaunchKernelInfo<
+struct CudaParallelLaunchKernelInvoker<
     DriverType, LaunchBounds, Experimental::CudaLaunchMechanism::ConstantMemory>
     : CudaParallelLaunchKernelFunc<
           DriverType, LaunchBounds,
@@ -458,7 +458,7 @@ struct CudaParallelLaunchKernelInfo<
     // somehow go and prove was not creating a dependency cycle, and I don't
     // even know if there's an efficient way to do that, let alone in the
     // structure we currenty have).
-    using global_launch_impl_t = CudaParallelLaunchKernelInfo<
+    using global_launch_impl_t = CudaParallelLaunchKernelInvoker<
         DriverType, LaunchBounds,
         Experimental::CudaLaunchMechanism::GlobalMemory>;
     global_launch_impl_t::create_parallel_launch_graph_node(
@@ -469,7 +469,7 @@ struct CudaParallelLaunchKernelInfo<
 // </editor-fold> end Constant Memory }}}2
 //------------------------------------------------------------------------------
 
-// </editor-fold> end CudaParallelLaunchKernelInfo }}}1
+// </editor-fold> end CudaParallelLaunchKernelInvoker }}}1
 //==============================================================================
 
 //==============================================================================
@@ -485,10 +485,10 @@ template <class DriverType, unsigned int MaxThreadsPerBlock,
 struct CudaParallelLaunchImpl<
     DriverType, Kokkos::LaunchBounds<MaxThreadsPerBlock, MinBlocksPerSM>,
     LaunchMechanism>
-    : CudaParallelLaunchKernelInfo<
+    : CudaParallelLaunchKernelInvoker<
           DriverType, Kokkos::LaunchBounds<MaxThreadsPerBlock, MinBlocksPerSM>,
           LaunchMechanism> {
-  using base_t = CudaParallelLaunchKernelInfo<
+  using base_t = CudaParallelLaunchKernelInvoker<
       DriverType, Kokkos::LaunchBounds<MaxThreadsPerBlock, MinBlocksPerSM>,
       LaunchMechanism>;
 
