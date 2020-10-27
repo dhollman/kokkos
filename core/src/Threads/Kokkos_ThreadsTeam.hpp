@@ -175,8 +175,8 @@ class ThreadsExecTeamMember {
     }
 #else
     // Make sure there is enough scratch space:
-    using type = typename if_c<sizeof(ValueType) < TEAM_REDUCE_SIZE, ValueType,
-                               void>::type;
+    using type = std::conditional_t<(sizeof(ValueType) < TEAM_REDUCE_SIZE),
+                                    ValueType, void>;
 
     if (m_team_base) {
       type* const local_value = ((type*)m_team_base[0]->scratch_memory());
@@ -201,8 +201,8 @@ class ThreadsExecTeamMember {
     }
 #else
     // Make sure there is enough scratch space:
-    using type = typename if_c<sizeof(ValueType) < TEAM_REDUCE_SIZE, ValueType,
-                               void>::type;
+    using type = std::conditional_t<(sizeof(ValueType) < TEAM_REDUCE_SIZE),
+                                    ValueType, void>;
     f(value);
     if (m_team_base) {
       type* const local_value = ((type*)m_team_base[0]->scratch_memory());
@@ -228,7 +228,7 @@ class ThreadsExecTeamMember {
   {
     // Make sure there is enough scratch space:
     using type =
-        typename if_c<sizeof(Type) < TEAM_REDUCE_SIZE, Type, void>::type;
+        std::conditional_t<(sizeof(Type) < TEAM_REDUCE_SIZE), Type, void>;
 
     if (nullptr == m_exec) return value;
 
@@ -272,8 +272,8 @@ class ThreadsExecTeamMember {
                   const typename ReducerType::value_type contribution) const {
     using value_type = typename ReducerType::value_type;
     // Make sure there is enough scratch space:
-    using type = typename if_c<sizeof(value_type) < TEAM_REDUCE_SIZE,
-                               value_type, void>::type;
+    using type = std::conditional_t<(sizeof(value_type) < TEAM_REDUCE_SIZE),
+                                    value_type, void>;
 
     if (nullptr == m_exec) return;
 
@@ -334,7 +334,7 @@ class ThreadsExecTeamMember {
   {
     // Make sure there is enough scratch space:
     using type =
-        typename if_c<sizeof(ArgType) < TEAM_REDUCE_SIZE, ArgType, void>::type;
+        std::conditional_t<(sizeof(ArgType) < TEAM_REDUCE_SIZE), ArgType, void>;
 
     if (nullptr == m_exec) return type(0);
 

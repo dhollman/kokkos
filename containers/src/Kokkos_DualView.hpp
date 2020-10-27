@@ -323,11 +323,7 @@ class DualView : public ViewTraits<DataType, Arg1Type, Arg2Type, Arg3Type> {
   ///   typename dual_view_type::t_host hostView = DV.view<host_device_type> ();
   /// \endcode
   template <class Device>
-  KOKKOS_INLINE_FUNCTION const typename Impl::if_c<
-      std::is_same<typename t_dev::memory_space,
-                   typename Device::memory_space>::value,
-      t_dev, t_host>::type&
-  view() const {
+  KOKKOS_INLINE_FUNCTION auto& view() const {
     constexpr bool device_is_memspace =
         std::is_same<Device, typename Device::memory_space>::value;
     constexpr bool device_is_execspace =
