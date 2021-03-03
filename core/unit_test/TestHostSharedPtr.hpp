@@ -53,11 +53,11 @@ TEST(TEST_CATEGORY, host_shared_ptr_is_reference_counted) {
   using T = int;  // default constructible
   {
     HostSharedPtr<T> p1;
-    EXPECT_FALSE(p1.is_reference_counted());
+    EXPECT_TRUE(p1.is_reference_counted());
   }
   {
     HostSharedPtr<T> p1(nullptr);
-    EXPECT_FALSE(p1.is_reference_counted());
+    EXPECT_TRUE(p1.is_reference_counted());
   }
   {
     HostSharedPtr<T> p1(new T());
